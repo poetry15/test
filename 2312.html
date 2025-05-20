@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>搜尋姓名與性別</title>
+  <style>
+    body { font-family: Arial; margin: 40px; display: flex; flex-direction: column; align-items: center; }
+    input, button { padding: 10px; font-size: 16px; margin: 5px; }
+    #results { margin-top: 20px; width: 100%; max-width: 500px; text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #aaa; padding: 10px; }
+    th { background-color: #f0f0f0; }
+  </style>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+</head>
+<body>
+<h2>搜尋「姓名」顯示性別</h2>
+<input type="text" id="searchInput" placeholder="請輸入姓名">
+<button onclick="searchSheet()">搜尋</button>
+<div id="results"></div>
+<script>
+const SHEET_ID = "11HkeMZjipAY45mc1lUkRyYeXfulF4t-_WWNxMMkgGI8";
+const GID = "0"; // 工作表 gid，通常是0，若不同要對應改
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}`;
+
+function searchSheet() {
+  const keyword = document.getElementById('searchInput').value.trim();
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '';
+
+  if (!keyword) {
+    resultsDiv.innerHTML = '<p>請輸入姓名</p>';
+    return;
+  }
+
+  fetch(SHEET_URL)
+    .then(res => res.text())
+    .then(text => {
+      // Google 會回傳奇怪的前後綴，抓出json
+      const json = JSON.parse(text.match(/{.*}/s)[0]);
+      const table = json.table;
+      const colName = table.cols[0].label; // 假設第一欄是姓名
+      const colGender = table.cols[1].label; // 第二欄是性別
+
+      let rows = table.rows
+        .map(r => ({ name: r.c[0] ? r.c[0].v : '', gender: r.c[1] ? r.c[1].v : '' }))
+        .filter(r => r.name && r.name.includes(keyword));
+
+      if (rows.length === 0) {
+        resultsDiv.innerHTML = '<p>找不到符合的姓名。</p>';
+        return;
+      }
+      let html = '<table><tr><th>姓名</th><th>性別</th></tr>';
+      rows.forEach(r => {
+        html += `<tr><td>${r.name}</td><td>${r.gender}</td></tr>`;
+      });
+      html += '</table>';
+      resultsDiv.innerHTML = html;
+    });
+}
+</script>
+</body>
+</html>
